@@ -10,7 +10,7 @@
 
   /* Ink */
   --ink: #1c1726;            /* 16.9:1 on --paper */
-  --ink-2: #4a4458;          /* 9.0:1 on --paper, 8.3:1 on --lilac */
+  --ink-2: #3b3548;          /* 9.0:1 on --paper, 8.3:1 on --lilac */
 
   /* Surfaces */
   --paper: #fbfafd;          /* page */
@@ -49,8 +49,8 @@
   --maxw: 1240px;
   --gutter: clamp(16px, 4vw, 36px);
 
-  --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
-  --font-head: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, "Times New Roman", serif;
+  --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --font-head: "Source Serif 4", "Source Serif Pro", Georgia, "Times New Roman", serif;
 }
 
 /* ---------- Reset / base ---------- */
@@ -760,3 +760,27 @@ a[href^="mailto:"] { overflow-wrap: anywhere; }
 .form-error-banner p { margin: 0; }
 .form-error-banner a { color: #7f1d1d; }
 .form-error-banner:target, .form-error-banner.show { display: block; }
+
+/* =========================================================================
+   Readability pass (client request): sturdier type for older readers.
+   Atkinson Hyperlegible Next was designed for low-vision readers; Source Serif 4
+   keeps the classic look without Bodoni's thin hairlines.
+   ========================================================================= */
+html { font-size: 118.75%; }               /* 19px base, still scales with browser settings */
+body { line-height: 1.7; letter-spacing: .005em; }
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: 0; line-height: 1.18; }
+h1 { letter-spacing: -.005em; }
+.lead { line-height: 1.65; }
+.paths .path-say, .carrier-name, .brand-name { font-weight: 700; letter-spacing: 0; }
+.prose, .article { max-width: 66ch; }
+/* small text never drops below ~17px */
+.fine, .form-note, .hint, .field .hint, .req, .consent, .consent label, .cal-note, .tpmo, .breadcrumbs,
+.site-footer, .topbar, .sub a span, .carrier-name small { font-size: max(.95rem, 17px); }
+.brand-tag { font-size: max(.86rem, 15px); }
+.cal-months { font-size: max(.86rem, 14px); }
+.cal-row h3 { font-size: 1.02rem; }
+@media (max-width: 640px) {
+  .cal-months { font-size: 14px; }
+  .cal-bar { font-size: 13px; }
+  .brand-tag { font-size: 14px; }
+}
