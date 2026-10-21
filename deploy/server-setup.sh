@@ -26,7 +26,7 @@ fi
 
 echo "==> Packages and automatic security updates"
 apt-get update -qq
-apt-get install -y -qq git curl ca-certificates xz-utils gnupg debian-keyring debian-archive-keyring apt-transport-https unattended-upgrades >/dev/null
+apt-get install -y -qq git curl ca-certificates xz-utils libatomic1 gnupg debian-keyring debian-archive-keyring apt-transport-https unattended-upgrades >/dev/null
 echo 'APT::Periodic::Update-Package-Lists "1"; APT::Periodic::Unattended-Upgrade "1";' > /etc/apt/apt.conf.d/20auto-upgrades
 
 echo "==> Node $NODE_VERSION (official build, checksum verified)"
