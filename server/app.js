@@ -10,6 +10,7 @@ const { serveStatic, resolve, sendFile } = require('./static');
 const { createLeadHandler } = require('./leads');
 const { createCrmApi } = require('./crm/api');
 const { createFormTokens } = require('./formtoken');
+const { createEventsPublic } = require('./events-public');
 const A = require('./auth');
 
 const ROOT = path.join(__dirname, '..');
@@ -24,6 +25,7 @@ function loadConfig(overrides = {}) {
     publicDir: path.join(ROOT, 'public'),
     crmDir: path.join(ROOT, 'crm'),
     trustProxy: env.TRUST_PROXY === '1',
+    publicUrl: (env.PUBLIC_URL || '').replace(/\/+$/, '') || null,
     proxyHops: num(env.TRUST_PROXY_HOPS, 1),
     trustedClientIpHeader: env.TRUSTED_CLIENT_IP_HEADER || null,
     rateLimitMaxKeys: num(env.RATE_LIMIT_MAX_KEYS, 50000),
@@ -58,6 +60,8 @@ function createApp(overrides = {}) {
   A.warmDummyHash();
   const handleLead = createLeadHandler(ctx);
   const handleCrmApi = createCrmApi(ctx);
+  const eventsPublic = createEventsPublic(ctx);
+  ctx.eventsPublic = eventsPublic;
   const notFoundPage = path.join(cfg.publicDir, '404.html');
 
   function notFound(req, res) {
@@ -102,6 +106,7 @@ function createApp(overrides = {}) {
       }
       if (pathname.startsWith('/api/')) { sendJson(res, 404, { ok: false, error: 'not_found' }); return; }
       if (pathname === '/crm/api' || pathname.startsWith('/crm/api/')) { await handleCrmApi(req, res, pathname, url.searchParams); return; }
+      if (!isCrm && await eventsPublic.handle(req, res, pathname, url, () => notFound(req, res))) return;
 
       if (req.method !== 'GET' && req.method !== 'HEAD') { sendText(res, 405, 'Method not allowed', 'text/plain; charset=utf-8', { Allow: 'GET, HEAD' }); return; }
       if (pathname === '/healthz') { sendJson(res, 200, { ok: true }, { 'Cache-Control': 'no-store' }); return; }

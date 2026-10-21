@@ -8,6 +8,7 @@ const { RateLimiter, ipKey } = require('../ratelimit');
 const { registerAccountRoutes } = require('./account');
 const { registerRecordRoutes } = require('./records');
 const { registerOverviewRoutes } = require('./overview');
+const { registerEventRoutes } = require('./events');
 
 const JSON_LIMIT = 100 * 1024;
 const STATE_CHANGING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -26,6 +27,7 @@ function createCrmApi(ctx) {
   registerAccountRoutes(router, ctx);
   registerRecordRoutes(router, ctx);
   registerOverviewRoutes(router, ctx);
+  registerEventRoutes(router, ctx);
 
   return async function handleCrmApi(req, res, pathname, query) {
     res.setHeader('Cache-Control', 'no-store');

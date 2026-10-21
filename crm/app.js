@@ -815,7 +815,7 @@
   // ---------- Shell ----------
   const NAV = [
     ['dashboard', 'Dashboard', '◆'], ['contacts', 'Contacts', '☰'], ['pipeline', 'Pipeline', '▤'], ['tasks', 'Tasks', '✓'],
-    ['calendar', 'Appointments', '◷'], ['compliance', 'Compliance', '⚖'],
+    ['calendar', 'Appointments', '◷'], ['events', 'Events', '✦'], ['compliance', 'Compliance', '⚖'],
     ['reports', 'Reports & exports', '▦', true], ['audit', 'Audit log', '⌕', true], ['settings', 'Settings', '⚙'],
   ];
 
@@ -861,6 +861,11 @@
     [/^\/pipeline$/, () => viewPipeline],
     [/^\/tasks$/, () => viewTasks],
     [/^\/calendar$/, () => viewCalendar],
+    [/^\/events$/, () => viewEvents],
+    [/^\/events\/new$/, () => viewEventEdit],
+    [/^\/events\/(\d+)$/, () => viewEventEdit],
+    [/^\/events\/(\d+)\/sheet$/, () => viewEventSheet],
+    [/^\/events\/(\d+)\/checkin$/, () => viewEventCheckin],
     [/^\/compliance$/, () => viewCompliance],
     [/^\/reports$/, () => viewReports, true],
     [/^\/audit$/, () => viewAudit, true],
@@ -992,6 +997,13 @@
       card(`Turning 65 · next 6 months (${d.turning_65.length})`, t65),
       card(`Policies starting · next 30 days (${d.effective_soon.length})`, eff),
       card(`Annual review due (${d.annual_review.length})`, h('p', { class: 'small muted', text: 'Active clients with no call, email, text or meeting logged since September 1.' }), review),
+      card(`Upcoming events · next 14 days (${(d.upcoming_events || []).length})`,
+        (d.upcoming_events || []).length ? h('ul', { class: 'list' }, d.upcoming_events.map((e) => h('li', {},
+          h('div', { class: 'main' }, h('a', { href: `#/events/${e.id}`, text: e.title }),
+            h('div', { class: 'meta', text: `${fmtDT(e.starts_at)} · ${e.format === 'online' ? 'Online' : [e.venue_name, e.city].filter(Boolean).join(', ')}` }),
+            e.warnings.map((w) => h('p', { class: 'small', }, h('span', { class: 'badge warn wrap', text: w })))),
+          h('span', { class: 'badge info', text: `${e.counts.people} coming${e.capacity ? ` of ${e.capacity}` : ''}` })))) : empty('No published events in the next 14 days.'),
+        h('p', {}, h('a', { href: '#/events', text: 'All events →' }))),
       card(`Contact permission expired (${d.permission_expired.length})`,
         h('p', { class: 'small muted', text: 'Website requests are good for 12 months. These people asked more than 12 months ago and never enrolled. Don’t reach out about plans unless they contact you again. Nothing is deleted.' }),
         d.permission_expired.length ? h('ul', { class: 'list' }, d.permission_expired.slice(0, 25).map((c) => h('li', {},
@@ -1667,6 +1679,251 @@
         h('button', { type: 'button', class: 'btn small', text: '← Newer', disabled: r.page <= 1, on: { click: () => go({ page: String(r.page - 1) }) } }),
         h('span', { class: 'muted', text: `Page ${r.page} of ${pages}` }),
         h('button', { type: 'button', class: 'btn small', text: 'Older →', disabled: r.page >= pages, on: { click: () => go({ page: String(r.page + 1) }) } }))));
+  }
+
+  // ---------- Events ----------
+  const EVENT_STATUS_CLASS = { draft: '', published: 'ok', cancelled: 'danger' };
+  function eventWhen(e) { return e.starts_at ? `${fmtDT(e.starts_at)}${e.ends_at ? `–${fmtTime(e.ends_at)}` : ''}` : 'No date yet'; }
+  function eventWhere(e) { return e.format === 'online' ? 'Online' : [e.venue_name, e.city].filter(Boolean).join(', ') || '—'; }
+  function complianceSummary(c) {
+    if (!c) return null;
+    if (c.blockers) return h('span', { class: 'badge danger', text: `${c.blockers} to fix` });
+    if (c.warnings) return h('span', { class: 'badge warn', text: `${c.warnings} warning${c.warnings === 1 ? '' : 's'}` });
+    return h('span', { class: 'badge ok', text: 'Checks pass' });
+  }
+
+  async function viewEvents(root, params) {
+    const tab = params.get('tab') || 'upcoming';
+    const r = await api('GET', `/events?tab=${encodeURIComponent(tab)}`);
+    const tabs = [['upcoming', 'Upcoming'], ['drafts', 'Drafts'], ['past', 'Past']];
+    const rows = r.items.map((e) => h('tr', {},
+      td('When', eventWhen(e)),
+      td('Event', h('a', { href: `#/events/${e.id}`, text: e.title }), h('div', { class: 'small muted', text: label('event_types', e.event_type) })),
+      td('Status', h('span', { class: `badge ${EVENT_STATUS_CLASS[e.status] || ''}`, text: label('event_status', e.status) })),
+      td('Where', eventWhere(e)),
+      td('RSVPs', `${e.counts.people} people${e.capacity ? ` of ${e.capacity}` : ''}`, e.counts.accommodations ? h('div', { class: 'small muted', text: `${e.counts.accommodations} accommodation request${e.counts.accommodations === 1 ? '' : 's'}` }) : null),
+      td('Checks', e.status === 'cancelled' ? '—' : complianceSummary(e.compliance))));
+    add(root,
+      pageHead('Events', 'Statewide in-person and online events. Published events appear on the public website.',
+        [h('a', { class: 'btn primary', href: '#/events/new', text: '+ New event' })]),
+      h('div', { class: 'actions', role: 'group', 'aria-label': 'Which events' }, tabs.map(([k, l]) =>
+        h('a', { class: `btn small${k === tab ? ' primary' : ''}`, href: `#/events?tab=${k}`, 'aria-current': k === tab ? 'true' : null, text: l }))),
+      h('div', { class: 'card events-table' }, r.items.length ? table(['When', 'Event', 'Status', 'Where', 'RSVPs', 'Checks'], rows)
+        : empty(tab === 'drafts' ? 'No drafts.' : tab === 'past' ? 'No past events yet.' : 'No upcoming events. Create one with “New event”.')));
+  }
+
+  function eventDefs() {
+    return [
+      { legend: 'About the event', fields: [
+        { name: 'title', label: 'Title', required: true, maxlength: 90, full: true, hint: 'Plain and specific, e.g. “Medicare basics with Skip Jackson, licensed insurance agent”.' },
+        { name: 'event_type', label: 'Event type', type: 'select', options: opts('event_types'), required: true, full: true,
+          hint: 'Educational: general Medicare information only. Information and enrollment: specific plans are discussed and applications may be taken.' },
+        { name: 'summary', label: 'Short summary', type: 'textarea', rows: 2, maxlength: 200, full: true, hint: 'Up to 200 characters. Shown on the events list.' },
+        { name: 'description', label: 'Full description', type: 'textarea', rows: 7, maxlength: 3000, full: true, hint: 'Plain text. Leave a blank line between paragraphs. The required disclosure is added automatically.' },
+      ] },
+      { legend: 'When (Georgia time)', fields: [
+        { name: 'starts_at', label: 'Starts', type: 'datetime', required: true },
+        { name: 'ends_at', label: 'Ends', type: 'datetime', required: true },
+      ] },
+      { legend: 'Where', fields: [
+        { name: 'format', label: 'Format', type: 'select', options: opts('event_formats'), noEmpty: true, full: true },
+        { name: 'venue_name', label: 'Venue name', maxlength: 120, full: true },
+        { name: 'address', label: 'Street address', maxlength: 200, full: true },
+        { name: 'city', label: 'City', maxlength: 80 },
+        { name: 'county', label: 'County', maxlength: 80 },
+        { name: 'zip', label: 'ZIP code', inputmode: 'numeric', maxlength: 10 },
+        { name: 'online_join_info', label: 'Online join link or dial-in', type: 'textarea', rows: 2, full: true, hint: 'Not printed on the listing. Anyone can get it from the event page with “Get the join link” — Medicare rules don’t allow requiring contact details to attend.' },
+      ] },
+      { legend: 'Attendance', fields: [
+        { name: 'rsvp_enabled', label: 'Accept RSVPs on the website', type: 'checkbox' },
+        { name: 'capacity', label: 'Seats available', type: 'number', min: 1, max: 5000, hint: 'Optional. Includes guests.' },
+        { name: 'accessibility_notes', label: 'Accessibility notes', type: 'textarea', rows: 2, full: true, hint: 'e.g. Wheelchair accessible; parking at front; hearing loop.' },
+        { name: 'refreshments', label: 'Refreshments', maxlength: 200, full: true, hint: 'Optional. Light refreshments or snacks only at sales events — no meals.' },
+      ] },
+      { legend: 'Compliance', fields: [
+        { name: 'healthcare_setting', label: 'Is the venue a healthcare setting?', type: 'select', options: opts('healthcare_settings'), noEmpty: true, full: true },
+        { name: 'carrier_submitted', label: 'I’ve submitted this event to the insurance companies whose plans I’ll discuss, as their agent policies require', type: 'checkbox' },
+        { name: 'carrier_refs', label: 'Carrier submission references', type: 'textarea', rows: 2, full: true, hint: 'Which companies and their confirmation or reference numbers.' },
+        { name: 'gifts_ack', label: (state.meta.event_acks || {}).gifts || 'Gift rules confirmed', type: 'checkbox', hint: 'Needed only if the listing mentions gifts, prizes, raffles or drawings.' },
+        { name: 'pairing_ack', label: (state.meta.event_acks || {}).pairing || 'Hand-off announcement confirmed', type: 'checkbox', hint: 'Needed only when an educational and a sales event are at the same venue on the same day.' },
+      ] },
+    ];
+  }
+
+  function checklistNode(c) {
+    if (!c) return empty('Checking…');
+    const icon = (rule) => (rule.ok ? '✓' : rule.level === 'warn' ? '!' : rule.level === 'info' ? 'i' : '✕');
+    const rank = (x) => (x.ok ? 3 : x.level === 'block' ? 0 : x.level === 'warn' ? 1 : 2);
+    return h('ul', { class: 'rule-list' }, [...c.rules].sort((a, b) => rank(a) - rank(b)).map((rule) => h('li', { class: `rule ${rule.ok ? 'pass' : rule.level}` },
+      h('span', { class: 'rule-icon', 'aria-hidden': 'true', text: icon(rule) }),
+      h('div', {}, h('span', { class: 'sr-only', text: rule.ok ? 'Passes: ' : rule.level === 'warn' ? 'Warning: ' : 'Must fix: ' }),
+        h('strong', { text: rule.label }), rule.message ? h('p', { class: 'small', text: rule.message }) : null))));
+  }
+
+  async function viewEventEdit(root, params, match) {
+    const id = match && match[1] ? Number(match[1]) : null;
+    const e = id ? (await api('GET', `/events/${id}`)).event : null;
+    const admin = isAdmin();
+    const canEdit = !e || (e.status === 'draft' || (admin && e.status === 'published'));
+    const start = TZ.dayAt(14, 10);
+    const values = e ? { ...e, rsvp_enabled: Boolean(e.rsvp_enabled), carrier_submitted: Boolean(e.carrier_submitted) }
+      : { event_type: 'educational', format: 'in_person', rsvp_enabled: true, healthcare_setting: 'no', starts_at: start.toISOString(), ends_at: new Date(start.getTime() + 90 * 60000).toISOString() };
+    const checklistBox = h('div', { 'aria-live': 'polite' }, checklistNode(e ? e.compliance : null));
+    const disclosureFor = (t) => (state.meta.event_disclosures || {})[t] || '';
+    const discNode = h('p', { class: 'small', text: disclosureFor(values.event_type) });
+    const form = makeForm({
+      defs: eventDefs(), values, submitLabel: e ? 'Save changes' : 'Save draft',
+      onSubmit: async (v) => {
+        const body = { ...v, capacity: v.capacity === '' ? '' : v.capacity };
+        if (e) {
+          const r = await api('PATCH', `/events/${e.id}`, body);
+          toast(r.changed && r.changed.length ? 'Event saved.' : 'No changes to save.');
+          reload();
+        } else {
+          const r = await api('POST', '/events', body);
+          toast('Draft saved.');
+          location.hash = `#/events/${r.id}`;
+        }
+      },
+    });
+    let timer;
+    async function refreshChecks() {
+      const vals = readFields(form.controls);
+      discNode.textContent = disclosureFor(vals.event_type);
+      try { checklistBox.replaceChildren(checklistNode(await api('POST', '/events/compliance-check', { ...vals, id: e ? e.id : undefined }))); } catch { /* shown on save */ }
+    }
+    form.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(refreshChecks, 500); });
+    form.addEventListener('change', () => { clearTimeout(timer); timer = setTimeout(refreshChecks, 200); });
+    if (!e) refreshChecks();
+    if (!canEdit) {
+      form.querySelectorAll('input, select, textarea, button[type=submit]').forEach((el) => { el.disabled = true; });
+    }
+
+    const act = async (path, okMsg, body) => {
+      try {
+        const r = await api('POST', `/events/${e.id}/${path}`, body || {});
+        toast(okMsg);
+        reload();
+        return r;
+      } catch (err) {
+        if (err.data && err.data.blockers) { toast(`${err.message} (${err.data.blockers.length} item${err.data.blockers.length === 1 ? '' : 's'})`, 'error'); refreshChecks(); } else toastErr(err);
+        return null;
+      }
+    };
+    const buttons = e ? [
+      e.starts_at ? h('a', { class: 'btn', href: `/crm/api/events/${e.id}/preview`, target: '_blank', rel: 'noopener', text: 'Preview public page ↗' }) : null,
+      e.status === 'published' && e.slug ? h('a', { class: 'btn', href: `/events/${encodeURIComponent(e.slug)}/`, target: '_blank', rel: 'noopener', text: 'View live page ↗' }) : null,
+      admin && e.status === 'draft' ? h('button', { type: 'button', class: 'btn primary', text: 'Publish', on: { click: async () => {
+        if (!(await confirmDialog({ title: 'Publish this event?', message: 'It will appear on the public Events page and the home page right away.', confirmLabel: 'Publish' }))) return;
+        const r = await act('publish', 'Event published.');
+        if (r && r.warnings && r.warnings.length) toast(`Published with ${r.warnings.length} warning(s): ${r.warnings.map((w) => w.label).join('; ')}`);
+      } } }) : null,
+      admin && e.status === 'published' ? h('button', { type: 'button', class: 'btn', text: 'Unpublish', on: { click: async () => {
+        if (await confirmDialog({ title: 'Unpublish?', message: 'The event will be removed from the website and become a draft again. Existing RSVPs are kept.', confirmLabel: 'Unpublish' })) act('unpublish', 'Event unpublished.');
+      } } }) : null,
+      admin && e.status !== 'cancelled' ? h('button', { type: 'button', class: 'btn danger', text: 'Cancel event…', on: { click: () => cancelEvent(e) } }) : null,
+      h('button', { type: 'button', class: 'btn', text: 'Duplicate', on: { click: async () => {
+        try { const r = await api('POST', `/events/${e.id}/duplicate`); toast('Copy created as a draft. Set the new date.'); location.hash = `#/events/${r.id}`; } catch (err) { toastErr(err); }
+      } } }),
+      admin && e.status === 'draft' && !e.published_at ? h('button', { type: 'button', class: 'btn danger', text: 'Delete draft', on: { click: async () => {
+        if (!(await confirmDialog({ title: 'Delete this draft?', message: 'This can’t be undone.', confirmLabel: 'Delete draft', danger: true }))) return;
+        try { await api('DELETE', `/events/${e.id}`); toast('Draft deleted.'); location.hash = '#/events?tab=drafts'; } catch (err) { toastErr(err); }
+      } } }) : null,
+    ] : null;
+
+    add(root,
+      h('p', { class: 'small' }, h('a', { href: '#/events', text: '← Events' })),
+      pageHead(e ? e.title : 'New event', e ? `${label('event_types', e.event_type)} · ${eventWhen(e)}` : 'Save as a draft first. An admin publishes it when the checklist passes.'),
+      e ? h('div', { class: 'actions' }, h('span', { class: `badge ${EVENT_STATUS_CLASS[e.status] || ''}`, text: label('event_status', e.status) }),
+        e.status === 'cancelled' ? h('span', { class: 'badge danger wrap', text: `Cancelled: ${e.cancel_reason || ''}` }) : null, buttons) : null,
+      !canEdit ? h('p', { class: 'notice', text: e.status === 'cancelled' ? 'Cancelled events can’t be edited. Use Duplicate to schedule it again.' : 'Only an admin can change a published event.' }) : null,
+      h('div', { class: 'event-editor' },
+        h('section', { class: 'card' }, form),
+        h('aside', { class: 'card event-checks', 'aria-label': 'Compliance checklist' }, h('h2', { text: 'Compliance checklist' }),
+          h('p', { class: 'small muted', text: 'Updates as you type. Every “must fix” item has to pass before publishing.' }), checklistBox,
+          h('h3', { text: 'Disclosure added to the public page' }), discNode)));
+    if (e) add(root, await eventRsvpSection(e));
+  }
+
+  function cancelEvent(e) {
+    formDialog({
+      title: `Cancel “${e.title}”`, danger: true, submitLabel: 'Cancel event',
+      intro: h('p', { text: 'The event stays on the website marked “Cancelled” (with your reason) until its date passes. You’ll then see everyone who signed up so you can let them know.' }),
+      defs: [{ name: 'reason', label: 'Reason (shown publicly)', type: 'textarea', rows: 2, required: true, full: true, maxlength: 300 }],
+      onSubmit: async (v) => {
+        const r = await api('POST', `/events/${e.id}/cancel`, v);
+        toast('Event cancelled.');
+        reload();
+        if (r.rsvps && r.rsvps.length) {
+          setTimeout(() => openDialog(`Let ${r.rsvps.length} ${r.rsvps.length === 1 ? 'person' : 'people'} know`, h('div', {},
+            h('p', { text: 'These people signed up. Call or email each one to tell them the event is cancelled.' }),
+            table(['Name', 'Guests', 'Phone', 'Email'], r.rsvps.map((x) => h('tr', {}, td('Name', `${x.first_name} ${x.last_name}`), td('Guests', String(x.guests)),
+              td('Phone', phoneLink(x.phone) || '—'), td('Email', mailLink(x.email) || '—')))))), 50);
+        }
+      },
+    });
+  }
+
+  async function eventRsvpSection(e) {
+    const r = await api('GET', `/events/${e.id}/rsvps`);
+    const rows = r.items.map((x) => h('tr', { class: x.status === 'cancelled' ? 'is-cancelled' : null },
+      td('Name', h('strong', { text: `${x.first_name} ${x.last_name}` })),
+      td('Guests', String(x.guests)),
+      td('Phone', phoneLink(x.phone) || ''),
+      td('Email', mailLink(x.email) || ''),
+      td('Accommodation', x.needs_accommodation || ''),
+      td('OK to contact', x.contact_permission ? h('span', { class: 'badge ok', text: 'Yes' }) : h('span', { class: 'badge', text: 'Event only' })),
+      td('Contact', x.contact_id ? contactLink(x.contact_id, x.contact_first ? `${x.contact_first} ${x.contact_last}` : `#${x.contact_id}`) : ''),
+      td('Status', x.status === 'going' ? h('span', { class: 'badge ok', text: 'Going' }) : h('span', { class: 'badge', text: 'Cancelled' }),
+        x.verified === 0 ? h('div', {}, h('span', { class: 'badge warn', text: 'Unverified source' })) : null),
+      td('', x.status === 'going' && isAdmin() ? h('button', { type: 'button', class: 'btn small', text: 'Mark cancelled', 'aria-label': `Mark RSVP for ${x.first_name} ${x.last_name} cancelled`, on: { click: async () => {
+        if (!(await confirmDialog({ title: 'Mark this RSVP cancelled?', message: `${x.first_name} ${x.last_name} will no longer count toward seats.`, confirmLabel: 'Mark cancelled' }))) return;
+        try { await api('POST', `/event-rsvps/${x.id}/cancel`); toast('RSVP marked cancelled.'); reload(); } catch (err) { toastErr(err); }
+      } } }) : null)));
+    return h('section', { class: 'card' }, h('h2', { text: `RSVPs · ${r.counts.people} ${r.counts.people === 1 ? 'person' : 'people'} coming${e.capacity ? ` of ${e.capacity} seats` : ''}` }),
+      h('div', { class: 'actions' },
+        h('a', { class: 'btn small', href: `#/events/${e.id}/sheet`, text: 'Printable sign-in sheet (blank)' }),
+        h('a', { class: 'btn small', href: `#/events/${e.id}/checkin`, text: 'Staff check-in list' }),
+        isAdmin() ? h('a', { class: 'btn small', href: `/crm/api/events/${e.id}/rsvps.csv`, download: '', text: 'Export RSVPs (CSV)' }) : null),
+      h('p', { class: 'small muted', text: '“Event only” means the person’s details may be used only for this event (they are removed automatically 90 days after it). “Yes” means they also asked to hear from Skip about Medicare plans (a contact was created or linked). “Unverified source” sign-ups don’t count toward seats.' }),
+      r.items.length ? table(['Name', 'Guests', 'Phone', 'Email', 'Accommodation', 'OK to contact', 'Contact', 'Status', ''], rows) : empty('No one has signed up yet.'));
+  }
+
+  // Blank sign-in sheet for the event table: no RSVP names pre-printed (others would see them).
+  async function viewEventSheet(root, params, match) {
+    const id = Number(match[1]);
+    const { event: e } = await api('GET', `/events/${id}`);
+    add(root,
+      h('p', { class: 'small no-print' }, h('a', { href: `#/events/${id}`, text: '← Back to event' })),
+      h('div', { class: 'sheet' },
+        h('h1', { tabindex: '-1', text: e.title }),
+        h('p', { class: 'sheet-meta', text: `${eventWhen(e)} · ${eventWhere(e)}` }),
+        h('p', { class: 'sheet-optional', text: 'Signing in is optional.' }),
+        h('p', { class: 'sheet-optional', text: 'Contact details are used only for this event unless you check the box.' }),
+        h('div', { class: 'table-wrap sheet-wrap' }, h('table', { class: 'sheet-table' },
+          h('thead', {}, h('tr', {}, ['Name (optional)', 'Phone or email (optional)', 'OK to contact me about Medicare plans after this event'].map((x) => h('th', { scope: 'col', text: x })))),
+          h('tbody', {}, Array.from({ length: 18 }, () => h('tr', {}, h('td', {}), h('td', {}), h('td', { class: 'sheet-box', text: '☐' })))))),
+        h('p', { class: 'small sheet-foot', text: `${(state.meta.event_disclosures || {})[e.event_type] || ''}` })),
+      h('div', { class: 'actions no-print' }, h('button', { type: 'button', class: 'btn primary', text: 'Print', on: { click: () => window.print() } })));
+  }
+
+  // Staff-only check-in list with RSVP names. Never put this out on the sign-in table.
+  async function viewEventCheckin(root, params, match) {
+    const id = Number(match[1]);
+    const [{ event: e }, r] = await Promise.all([api('GET', `/events/${id}`), api('GET', `/events/${id}/rsvps`)]);
+    const going = r.items.filter((x) => x.status === 'going');
+    add(root,
+      h('p', { class: 'small no-print' }, h('a', { href: `#/events/${id}`, text: '← Back to event' })),
+      h('div', { class: 'sheet' },
+        h('p', { class: 'staff-only', text: 'Staff check-in list — do not display' }),
+        h('h1', { tabindex: '-1', text: e.title }),
+        h('p', { class: 'sheet-meta', text: `${eventWhen(e)} · ${eventWhere(e)} · ${r.counts.people} expected` }),
+        h('div', { class: 'table-wrap sheet-wrap' }, h('table', { class: 'sheet-table' },
+          h('thead', {}, h('tr', {}, ['Here', 'Name', 'Guests', 'Accommodation'].map((x) => h('th', { scope: 'col', text: x })))),
+          h('tbody', {}, going.map((x) => h('tr', {}, h('td', { class: 'sheet-box', text: '☐' }), h('td', { text: `${x.first_name} ${x.last_name}` }),
+            h('td', { text: x.guests ? String(x.guests) : '' }), h('td', { text: x.needs_accommodation || '' })))))),
+        going.length ? null : empty('No one has signed up yet.')),
+      h('div', { class: 'actions no-print' }, h('button', { type: 'button', class: 'btn primary', text: 'Print', on: { click: () => window.print() } })));
   }
 
   // ---------- Settings ----------

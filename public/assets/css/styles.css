@@ -784,3 +784,126 @@ h1 { letter-spacing: -.005em; }
   .cal-bar { font-size: 13px; }
   .brand-tag { font-size: 14px; }
 }
+
+/* =========================================================================
+   Events (server-rendered listing, detail and RSVP pages)
+   Plum date tiles with gold month labels; generous spacing; senior-first.
+   ========================================================================= */
+.events-section { padding-top: clamp(40px, 5vw, 64px); }
+.events-list-wrap { max-width: 980px; }
+.events-filter {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 16px 20px; align-items: end;
+  background: var(--lilac); border: 1px solid var(--lilac-2); border-radius: var(--radius); padding: 20px 22px; margin: 0 0 28px;
+}
+.events-filter .field label { margin-bottom: 6px; }
+.events-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.events-count { color: var(--ink-2); margin: 0 0 8px; }
+.events-month { margin-top: 36px; }
+.events-month-title {
+  display: flex; align-items: center; gap: 14px; font-size: clamp(1.45rem, 1.2rem + .8vw, 1.9rem); margin: 0 0 18px;
+}
+.events-month-title::after { content: ""; flex: 1; height: 2px; background: linear-gradient(90deg, var(--gold), transparent); border-radius: 2px; }
+.event-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 20px; }
+.event-list li + li { margin-top: 0; }
+.event-card {
+  display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 24px; align-items: start;
+  background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.event-card:hover, .event-card:focus-within { border-color: var(--plum-300); box-shadow: var(--shadow-lg); }
+.event-date {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  background: var(--plum-800); color: #fff; border-radius: 16px; padding: 14px 8px 12px; min-height: 120px;
+  box-shadow: inset 0 -5px 0 var(--gold), 0 10px 22px -14px rgba(31, 15, 54, .8);
+}
+.event-date-mon { color: var(--gold); font-weight: 800; font-size: .95rem; letter-spacing: .12em; text-transform: uppercase; }
+.event-date-day { font-family: var(--font-head); font-weight: 700; font-size: 2.6rem; line-height: 1; margin: 4px 0; }
+.event-date-wd { color: var(--plum-200); font-size: .9rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.event-body > :last-child { margin-bottom: 0; }
+.event-meta-top { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.event-type, .event-format, .event-cancelled {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 3px 14px; border-radius: 999px; font-weight: 700; font-size: max(.88rem, 16px);
+  border: 1.5px solid currentColor;
+}
+.event-type-educational { color: var(--plum-700); background: var(--lilac); }
+.event-type-marketing { color: #6b4c07; background: var(--gold-wash); }
+.event-format { color: var(--ink-2); background: #fff; }
+.event-cancelled { color: #8f1d17; background: #fdeceb; }
+.event-title { font-size: clamp(1.3rem, 1.15rem + .55vw, 1.6rem); margin: 0 0 10px; }
+.event-title a { color: var(--plum-800); text-decoration-thickness: 2px; text-underline-offset: 4px; text-decoration-color: var(--gold-line); }
+.event-title a:hover { color: var(--plum-600); }
+.event-when { font-weight: 700; margin: 0 0 4px; }
+.event-where { color: var(--ink-2); margin: 0 0 12px; }
+.event-summary { margin: 0 0 14px; }
+.event-actions { margin: 0; }
+.event-card.is-cancelled .event-date { background: #6e6480; box-shadow: none; }
+.event-card.is-cancelled .event-date-mon { color: #fff; }
+.event-cancel-note { background: #fdeceb; color: #7f1d1d; border-left: 5px solid #b3261e; border-radius: 10px; padding: 12px 16px; }
+.events-empty { background: #fff; border: 1px dashed var(--line-strong); border-radius: var(--radius); padding: 28px; font-size: 1.1rem; }
+.events-empty p { margin: 0; }
+.event-list-compact { grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); margin-bottom: 24px; }
+.event-list-compact .event-card { grid-template-columns: 92px minmax(0, 1fr); gap: 18px; padding: 20px; }
+.event-list-compact .event-date { min-height: 100px; }
+.event-list-compact .event-date-day { font-size: 2.1rem; }
+.event-list-compact .event-summary { display: none; }
+
+/* Detail page */
+.event-hero-type { color: var(--gold); font-weight: 700; margin: 0 0 .6em; }
+.event-detail { grid-template-columns: minmax(0, 1fr) minmax(320px, 440px); }
+.event-detail .article { max-width: none; }
+.event-facts { display: grid; gap: 0; margin: 0 0 1.6em; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; overflow: hidden; }
+.event-facts > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; padding: 14px 20px; border-top: 1px solid var(--line); }
+.event-facts > div:first-child { border-top: 0; }
+.event-facts dt { font-weight: 700; color: var(--plum-800); }
+.event-facts dd { margin: 0; overflow-wrap: anywhere; }
+.event-disclosure { margin-top: 1.6em; }
+.event-rsvp .form-grid { grid-template-columns: minmax(0, 1fr); }
+.event-rsvp .form-card h2 { font-size: 1.6rem; }
+.event-rsvp .aside-card { position: static; }
+.rsvp-optional { color: var(--ink-2); }
+.rsvp-confirm { max-width: 760px; }
+.rsvp-confirm:focus { outline: none; }
+.join-info { display: inline-block; margin-top: 6px; padding: 10px 14px; background: var(--gold-wash); border-radius: 10px; font-weight: 700; }
+.preview-banner { background: var(--gold-wash); border-bottom: 3px solid var(--gold); padding: 12px 0; color: #4a3500; }
+.event-cancelled-callout { border-left-color: #b3261e; background: #fdeceb; }
+
+/* Footer: staff link, deliberately quiet */
+.footer-meta { color: #bdb1d3; }
+.site-footer .staff-link { display: inline-block; padding: 12px 0; margin-left: 14px; color: #cdbfe3; text-decoration-color: rgba(205, 191, 227, .5); font-size: .95em; }
+.site-footer .staff-link:hover { color: #fff; }
+
+@media (max-width: 1180px) {
+  .event-detail { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .events-filter { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  /* Phones: the date tile becomes a compact band so the text gets the full width */
+  .event-card, .event-list-compact .event-card { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 18px 16px; }
+  .event-date, .event-list-compact .event-date { flex-direction: row; justify-content: flex-start; gap: 10px; min-height: 0; width: fit-content; padding: 8px 16px; border-radius: 12px; }
+  .event-date-day, .event-list-compact .event-date-day { font-size: 1.6rem; margin: 0; }
+  .event-date-mon, .event-date-wd { font-size: 15px; letter-spacing: .06em; }
+  .event-facts > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .site-footer .staff-link { margin-left: 0; display: block; }
+}
+@media print {
+  .events-filter, .event-actions, .rsvp-form { display: none !important; }
+}
+
+/* Header fits the extra "Events" link: on wide screens the tagline moves out of the header
+   (the top bar already says "Licensed insurance agent"), and link padding tightens near 1180px. */
+@media (min-width: 1181px) {
+  .brand-tag { display: none; }
+  .nav-link, .sub-toggle { padding: 0 10px; }
+}
+@media (min-width: 1181px) and (max-width: 1320px) {
+  .nav-link, .sub-toggle { padding: 0 7px; font-size: .95rem; }
+  .nav-cta { margin-left: 4px; }
+  .nav-cta .btn { padding: 8px 16px; }
+}
+.events-accommodation { color: var(--ink-2); font-weight: 600; margin: 0 0 12px; }
+.join-box { margin: 0 0 1.6em; }
+.join-box h2 { font-size: 1.35rem; margin: 0 0 .4em; }
+.join-box form { margin: 0; }
+.event-following { border-left-color: var(--gold); background: var(--gold-wash); }

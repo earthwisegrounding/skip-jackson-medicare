@@ -318,6 +318,80 @@ ALTER TABLE tasks ADD COLUMN kind TEXT;            -- 'callback' for website cal
 ALTER TABLE contacts ADD COLUMN related_contact_id INTEGER;  -- e.g. possible household member sharing a phone/email
 `,
   },
+  {
+    version: 4,
+    name: 'statewide events and RSVPs',
+    sql: `
+CREATE TABLE events (
+  id INTEGER PRIMARY KEY,
+  slug TEXT UNIQUE,
+  title TEXT NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN ('educational','marketing')),
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','published','cancelled')),
+  starts_at TEXT,                 -- UTC ISO; entered/displayed in Georgia time
+  ends_at TEXT,
+  format TEXT NOT NULL DEFAULT 'in_person' CHECK (format IN ('in_person','online')),
+  venue_name TEXT,
+  address TEXT,
+  city TEXT,
+  county TEXT,
+  zip TEXT,
+  online_join_info TEXT,          -- only ever shown to people who RSVP, and in the CRM
+  summary TEXT,
+  description TEXT,               -- plain text, blank-line paragraphs
+  accessibility_notes TEXT,
+  capacity INTEGER,
+  rsvp_enabled INTEGER NOT NULL DEFAULT 1,
+  healthcare_setting TEXT NOT NULL DEFAULT 'no' CHECK (healthcare_setting IN ('no','common_area','patient_care_area')),
+  carrier_submitted INTEGER NOT NULL DEFAULT 0,
+  carrier_refs TEXT,
+  refreshments TEXT,
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  published_at TEXT,
+  cancelled_at TEXT,
+  cancel_reason TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX idx_events_start ON events(status, starts_at);
+
+CREATE TABLE event_rsvps (
+  id INTEGER PRIMARY KEY,
+  event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
+  guests INTEGER NOT NULL DEFAULT 0,
+  needs_accommodation TEXT,
+  contact_permission INTEGER NOT NULL DEFAULT 0,
+  verified INTEGER NOT NULL DEFAULT 1,
+  ip TEXT,
+  user_agent TEXT,
+  origin TEXT,
+  status TEXT NOT NULL DEFAULT 'going' CHECK (status IN ('going','cancelled')),
+  cancelled_at TEXT,
+  contact_id INTEGER REFERENCES contacts(id) ON DELETE SET NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_event_rsvps_event ON event_rsvps(event_id, status);
+`,
+  },
+  {
+    version: 5,
+    name: 'events review: visibility, acknowledgements, RSVP confirmation and retention',
+    sql: `
+ALTER TABLE events ADD COLUMN public_cancel INTEGER NOT NULL DEFAULT 0;  -- cancelled while published: shown publicly as cancelled
+ALTER TABLE events ADD COLUMN gifts_ack INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE events ADD COLUMN pairing_ack INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE event_rsvps ADD COLUMN confirm_hash TEXT;
+ALTER TABLE event_rsvps ADD COLUMN confirm_expires_at TEXT;
+ALTER TABLE event_rsvps ADD COLUMN anonymized_at TEXT;
+CREATE INDEX idx_event_rsvps_confirm ON event_rsvps(confirm_hash);
+UPDATE events SET public_cancel = 1 WHERE status = 'cancelled' AND published_at IS NOT NULL;
+`,
+  },
 ];
 
 /** Lower-case, strip accents and punctuation, collapse spaces: "José O'Brien" -> "jose obrien". */

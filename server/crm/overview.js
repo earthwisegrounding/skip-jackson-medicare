@@ -7,6 +7,7 @@ const { localDate, localMonth, addMonths, aepStatus, startOfLocalDay, addDaysLoc
 const { auditR, paging } = require('./helpers');
 const { decorateAppointment, LAST_CONTACTED_SQL } = require('./records');
 const { SOA_VALID_MONTHS } = require('../compliance');
+const { upcomingForDashboard } = require('./events');
 const { formatPhone } = require('../validate');
 
 const admin = { role: 'admin' };
@@ -66,6 +67,7 @@ function registerOverviewRoutes(router, ctx) {
       WHERE last_request_at IS NOT NULL AND last_request_at < ? ORDER BY last_request_at LIMIT 100`).all(cutoff.toISOString());
 
     return {
+      upcoming_events: upcomingForDashboard(db, 14),
       permission_expired: permissionExpired,
       today, aep, stage_counts: stageCounts, new_leads: newLeads, tasks, appointments, turning_65: turning65,
       effective_soon: effective, annual_review: review, dnc_warnings: dncWarnings, user: r.user,

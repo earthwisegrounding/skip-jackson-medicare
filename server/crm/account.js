@@ -8,6 +8,7 @@ const { fail, check, mustGet, auditR, changedFields, created } = require('./help
 const S = require('../services');
 const { update } = require('../db');
 const { TZ } = require('../time');
+const EV = require('../events');
 
 const LOGIN_FAILED = 'That email and password combination did not work, or the account is temporarily locked. Please try again, or wait 15 minutes.';
 
@@ -157,7 +158,8 @@ function registerAccountRoutes(router, ctx) {
       soa_products: C.SOA_PRODUCTS, soa_signature_methods: C.SOA_SIGNATURE_METHODS, soa_initiated_by: C.SOA_INITIATED_BY,
       carriers: C.CARRIERS, plan_types: C.PLAN_TYPES, policy_status: C.POLICY_STATUS,
       election_periods: C.ELECTION_PERIODS, consent_channels: C.CONSENT_CHANNELS, consent_sources: C.CONSENT_SOURCES,
-      task_priorities: C.TASK_PRIORITIES, roles: C.ROLES, web_consent: { version: C.WEB_CONSENT_VERSION, text: C.WEB_CONSENT_TEXT },
+      task_priorities: C.TASK_PRIORITIES, event_types: EV.EVENT_TYPES, event_formats: EV.FORMATS, healthcare_settings: EV.HEALTHCARE_SETTINGS,
+      event_status: EV.EVENT_STATUS, event_disclosures: EV.DISCLOSURES, event_acks: { gifts: EV.GIFTS_ACK, pairing: EV.PAIRING_ACK }, roles: C.ROLES, web_consent: { version: C.WEB_CONSENT_VERSION, text: C.WEB_CONSENT_TEXT },
       users, settings: getSettings(db), timezone: TZ, idle_timeout_ms: cfg.sessionIdleMs,
     };
   });

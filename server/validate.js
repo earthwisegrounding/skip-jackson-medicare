@@ -32,15 +32,24 @@ function isRealDate(s) {
   return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d && y >= 1900 && y <= 2200;
 }
 
-const str = (max, label = 'This field') => (v) => {
-  const s = String(v).trim();
+// Control characters never belong in stored text (they break CSV, .ics and terminals).
+const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
+const FORMAT = /\p{Cf}/gu; // zero-width and bidi controls; stripped from public-facing text
+const str = (max, label = 'This field', strict = false) => (v) => {
+  let s = String(v).replace(/[\r\n\t]+/g, ' ').replace(CONTROL, '');
+  if (strict) s = s.replace(FORMAT, '');
+  s = s.trim();
   if (s.length > max) throw new Invalid(`${label} must be ${max} characters or fewer.`);
   return s;
 };
 
 const T = {
   string: (max = 200) => ({ parse: str(max) }),
-  text: (max = 5000) => ({ parse: (v) => { const s = String(v).replace(/\r\n/g, '\n').trim(); if (s.length > max) throw new Invalid(`Please keep this under ${max} characters.`); return s; } }),
+  text: (max = 5000) => ({ parse: (v) => { const s = String(v).replace(/\r\n?/g, '\n').replace(CONTROL, '').trim(); if (s.length > max) throw new Invalid(`Please keep this under ${max} characters.`); return s; } }),
+  /** Public-facing single line: also strips zero-width/bidi format characters. */
+  cleanString: (max = 200) => ({ parse: str(max, 'This field', true) }),
+  /** Public-facing multi-line text: also strips zero-width/bidi format characters. */
+  cleanText: (max = 5000) => ({ parse: (v) => { const s = String(v).replace(/\r\n?/g, '\n').replace(CONTROL, '').replace(FORMAT, '').trim(); if (s.length > max) throw new Invalid(`Please keep this under ${max} characters.`); return s; } }),
   enum: (values, msg = 'Please choose a valid option.') => ({ parse: (v) => { const s = String(v).trim(); if (!values.includes(s)) throw new Invalid(msg); return s; } }),
   email: () => ({ parse: (v) => { const s = String(v).trim().toLowerCase(); if (s.length > 120 || !EMAIL_RE.test(s)) throw new Invalid('Please enter a valid email address.'); return s; } }),
   phone: () => ({ parse: (v) => { const p = normPhone(v); if (!p) throw new Invalid('Please enter a 10-digit phone number.'); return p; } }),

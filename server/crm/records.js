@@ -261,6 +261,8 @@ function registerRecordRoutes(router, ctx) {
       for (const t of ['scope_of_appointments', 'appointments', 'policies', 'tasks', 'activities']) db.prepare(`DELETE FROM ${t} WHERE contact_id = ?`).run(c.id);
       db.prepare('DELETE FROM activity_revisions WHERE contact_id = ?').run(c.id);
       db.prepare(`UPDATE consents SET phone = NULL, email = NULL, ip = NULL, user_agent = NULL, form_id = NULL, source_page = NULL WHERE contact_id = ?`).run(c.id);
+      db.prepare(`UPDATE event_rsvps SET first_name = 'Deleted', last_name = 'contact', phone = NULL, email = NULL, needs_accommodation = NULL,
+        ip = NULL, user_agent = NULL, origin = NULL WHERE contact_id = ?`).run(c.id);
       db.prepare(`UPDATE contact_requests SET phone = NULL, email = NULL, ip = NULL, user_agent = NULL, origin = NULL, referer = NULL,
         submitted_name = NULL, source_page = NULL WHERE contact_id = ?`).run(c.id);
       const now = S.nowIso();

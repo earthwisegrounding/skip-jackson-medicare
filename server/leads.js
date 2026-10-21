@@ -136,7 +136,7 @@ function createLeadHandler(ctx) {
  *  - web consent is effective automatically only when nothing about the request is doubtful;
  *    otherwise it is stored with effective=0 and a staff member must review and accept it.
  */
-function storeLead(db, v, { ip = null, userAgent = null, origin = null, referer = null, verified = true, verifyReason = null, browserHeaders = true } = {}) {
+function storeLead(db, v, { ip = null, userAgent = null, origin = null, referer = null, verified = true, verifyReason = null, browserHeaders = true, source = 'website' } = {}) {
   const now = S.nowIso();
   const submittedName = S.contactName(v);
   const candidates = S.findCandidates(db, v.phone, v.email);
@@ -149,7 +149,7 @@ function storeLead(db, v, { ip = null, userAgent = null, origin = null, referer 
   if (isNew) {
     const id = insert(db, 'contacts', {
       first_name: v.first_name, last_name: v.last_name, phone: v.phone, email: v.email, zip: v.zip, state: 'GA',
-      turning_65: v.turning_65, stage: 'new', source: 'website', topic: v.topic, preferred_contact: v.preferred_contact,
+      turning_65: v.turning_65, stage: 'new', source, topic: v.topic, preferred_contact: v.preferred_contact,
       preferred_time: v.preferred_time, meeting_type: v.meeting_type, assigned_user_id: S.defaultAssignee(db),
       tags: household ? 'possible household member' : null, related_contact_id: household ? household.contact.id : null,
       created_at: now, updated_at: now,
@@ -162,7 +162,7 @@ function storeLead(db, v, { ip = null, userAgent = null, origin = null, referer 
     }
   }
 
-  const lines = [`Website request (${v.form_id || 'form'}) from “${submittedName}”`];
+  const lines = [`${source === 'event' ? 'Event RSVP' : 'Website request'} (${v.form_id || 'form'}) from “${submittedName}”`];
   if (!verified) lines.push(`Unverified source (${verifyReason || 'no form token'}).`);
   if (v.message) lines.push(v.message);
   const activityId = S.addActivity(db, {

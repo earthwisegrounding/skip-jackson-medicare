@@ -14,7 +14,8 @@ const { openDb, insert, tx } = require('../server/db');
 const { hashPassword, passwordProblem } = require('../server/auth');
 const { storeLead } = require('../server/leads');
 const S = require('../server/services');
-const { turning65FromDob, localMonth, addMonths } = require('../server/time');
+const { turning65FromDob, localMonth, addMonths, zonedParts, zonedToDate } = require('../server/time');
+const { makeSlug } = require('../server/events');
 const { WEB_CONSENT_TEXT, WEB_CONSENT_VERSION } = require('../server/constants');
 
 const force = process.argv.includes('--force');
@@ -160,6 +161,33 @@ async function main() {
     task('Confirm Danny’s application status with carrier', now + 2 * HOUR, ids.Danny);
     task('Mail Fiona her welcome packet checklist', now + 3 * DAY, ids.Fiona, agentId || adminId, 'low');
     task('Renew state license CE credits (demo)', now + 14 * DAY, null);
+
+    // ---- Two sample events (obviously fake venues/links) ----
+    const at = (days, hourET, minute = 0) => {
+      const d = zonedToDate(...(() => { const p = zonedParts(new Date(now + days * DAY)); return [p.y, p.m, p.d]; })(), hourET, minute);
+      return d.toISOString();
+    };
+    const ev = (row) => {
+      const t = iso(now);
+      const id = insert(db, 'events', { status: 'published', published_at: t, created_by: adminId, updated_by: adminId, created_at: t, updated_at: t, ...row });
+      db.prepare('UPDATE events SET slug = ? WHERE id = ?').run(makeSlug(db, { ...row, id }), id);
+      return id;
+    };
+    const e1 = ev({
+      title: 'Medicare Basics at the Library (demo)', event_type: 'educational', starts_at: at(9, 14), ends_at: at(9, 15, 30), format: 'in_person',
+      venue_name: 'Demo County Public Library, Community Room', address: '100 Example Street', city: 'Decatur', county: 'DeKalb', zip: '30030',
+      summary: 'A plain-English overview of Parts A, B, C and D, and the dates that matter. Bring your questions.',
+      description: 'This demo session walks through how Original Medicare works, what Medicare Advantage and Part D are, and when you can sign up or make changes.\n\nFamily members and caregivers are welcome.',
+      accessibility_notes: 'Wheelchair accessible; parking at the front entrance; large-print handouts available.', capacity: 40, rsvp_enabled: 1, healthcare_setting: 'no',
+    });
+    ev({
+      title: 'Online information session with Skip Jackson, licensed insurance agent (demo)', event_type: 'marketing', starts_at: at(12, 18), ends_at: at(12, 19), format: 'online',
+      online_join_info: 'Demo video link: https://example.com/demo-meeting\nOr dial (404) 555-0199, code 000 000 (fictional)',
+      summary: 'Compare this year’s plans from the companies Skip represents, from home. Ask questions on camera or by chat.',
+      description: 'Skip will review plan options available in Georgia from the insurance companies he represents and answer questions.\n\nUse “Get the join link” on the event page; signing up is optional.',
+      rsvp_enabled: 1, healthcare_setting: 'no', carrier_submitted: 1, carrier_refs: 'Demo carrier refs: DEMO-123, DEMO-456',
+    });
+    insert(db, 'event_rsvps', { event_id: e1, first_name: 'Dora', last_name: 'Demo', email: 'dora.demo@example.com', guests: 1, needs_accommodation: 'Large print, please', contact_permission: 0, created_at: iso(now - DAY) });
   });
 
   const counts = ['contacts', 'activities', 'tasks', 'appointments', 'scope_of_appointments', 'policies', 'consents'].map((t) => `${t}: ${db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get().n}`);
