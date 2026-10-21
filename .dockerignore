@@ -1,0 +1,13 @@
+.git
+.claude
+node_modules
+data
+data-*
+backups
+test
+*.db
+*.db-*
+.env
+.DS_Store
+Dockerfile
+.dockerignore

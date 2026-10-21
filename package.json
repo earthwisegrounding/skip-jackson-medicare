@@ -1,0 +1,18 @@
+{
+  "name": "skip-jackson-medicare",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Website, lead intake and CRM for Skip Jackson, licensed Medicare insurance agent (Georgia).",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=25"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test --test-concurrency=1 \"test/**/*.test.js\"",
+    "create-user": "node scripts/create-user.js",
+    "seed:demo": "node scripts/seed-demo.js",
+    "backup": "node scripts/backup.js"
+  }
+}

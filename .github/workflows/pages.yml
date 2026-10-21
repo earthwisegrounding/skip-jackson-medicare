@@ -1,0 +1,41 @@
+# Publishes the static website (public/) to GitHub Pages.
+# The CRM and /api/leads need the Node server, so on Pages the forms fall back to
+# "please call" until the app is deployed to a Node host.
+name: Deploy site to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["public/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare site
+        run: |
+          cp -R public _site
+          # Project pages live under /<repo>/, so the root-relative 404 page needs that prefix.
+          BASE="/${GITHUB_REPOSITORY#*/}"
+          sed -i "s#href=\"/#href=\"$BASE/#g; s#src=\"/#src=\"$BASE/#g" _site/404.html
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
