@@ -11,9 +11,16 @@ PROJECT_ID="${PROJECT_ID:-skip-jackson-crm-$(openssl rand -hex 2)}"
 ZONE="${ZONE:-us-east1-b}"     # South Carolina: free-tier region closest to Georgia
 VM="${VM:-skip-crm}"
 
-echo "==> Creating project $PROJECT_ID"
-gcloud projects create "$PROJECT_ID" --name="Skip Jackson CRM"
-gcloud billing projects link "$PROJECT_ID" --billing-account="$BILLING_ACCOUNT"
+# Use an existing project when PROJECT_ID names one (Google limits how many projects an account may create).
+if gcloud projects describe "$PROJECT_ID" >/dev/null 2>&1; then
+  echo "==> Using existing project $PROJECT_ID"
+else
+  echo "==> Creating project $PROJECT_ID"
+  gcloud projects create "$PROJECT_ID" --name="Skip Jackson CRM"
+fi
+if [ "$(gcloud billing projects describe "$PROJECT_ID" --format='value(billingAccountName)')" != "billingAccounts/$BILLING_ACCOUNT" ]; then
+  gcloud billing projects link "$PROJECT_ID" --billing-account="$BILLING_ACCOUNT"
+fi
 gcloud config set project "$PROJECT_ID" >/dev/null
 
 echo "==> Enabling APIs"
@@ -25,12 +32,14 @@ gcloud billing budgets create --billing-account="$BILLING_ACCOUNT" \
   --budget-amount=1USD --filter-projects="projects/$PROJECT_ID" \
   --threshold-rule=percent=0.01 --threshold-rule=percent=1.0 >/dev/null
 
-echo "==> Firewall: web open, SSH only through Google's IAP tunnel"
-gcloud compute firewall-rules delete default-allow-rdp default-allow-ssh --quiet 2>/dev/null || true
-gcloud compute firewall-rules create allow-web --network=default --direction=INGRESS \
+echo "==> Firewall: web open on this server; SSH through Google's IAP tunnel"
+gcloud compute firewall-rules describe allow-web >/dev/null 2>&1 || gcloud compute firewall-rules create allow-web --network=default --direction=INGRESS \
   --allow=tcp:80,tcp:443 --target-tags=web --source-ranges=0.0.0.0/0
-gcloud compute firewall-rules create allow-ssh-iap --network=default --direction=INGRESS \
+gcloud compute firewall-rules describe allow-ssh-iap >/dev/null 2>&1 || gcloud compute firewall-rules create allow-ssh-iap --network=default --direction=INGRESS --priority=900 \
   --allow=tcp:22 --target-tags=web --source-ranges=35.235.240.0/20
+# Block SSH from anywhere else for this server only (doesn't touch other machines in the project).
+gcloud compute firewall-rules describe deny-ssh-web >/dev/null 2>&1 || gcloud compute firewall-rules create deny-ssh-web --network=default --direction=INGRESS --priority=1000 \
+  --action=DENY --rules=tcp:22,tcp:3389 --target-tags=web --source-ranges=0.0.0.0/0
 
 echo "==> Creating the free-tier server"
 gcloud compute instances create "$VM" --zone="$ZONE" \
