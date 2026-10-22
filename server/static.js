@@ -12,6 +12,7 @@ const TYPES = {
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif',
   '.webp': 'image/webp', '.avif': 'image/avif', '.ico': 'image/x-icon',
   '.woff': 'font/woff', '.woff2': 'font/woff2', '.pdf': 'application/pdf', '.mp4': 'video/mp4', '.webm': 'video/webm',
+  '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.vtt': 'text/vtt; charset=utf-8',
 };
 const COMPRESSIBLE = new Set(['.html', '.css', '.js', '.mjs', '.json', '.txt', '.xml', '.svg', '.webmanifest']);
 
@@ -71,6 +72,26 @@ function sendFile(req, res, file, stat, { status = 200, noCache = false } = {}) 
       return;
     }
   }
+  // Byte ranges for media and other binary files (Safari won't play audio/video without them).
+  if (status === 200 && !COMPRESSIBLE.has(ext)) {
+    res.setHeader('Accept-Ranges', 'bytes');
+    const range = parseRange(req.headers.range, stat.size);
+    if (range === 'invalid') {
+      res.writeHead(416, { 'Content-Range': `bytes */${stat.size}` });
+      res.end();
+      return;
+    }
+    if (range) {
+      res.setHeader('Content-Range', `bytes ${range.start}-${range.end}/${stat.size}`);
+      res.setHeader('Content-Length', range.end - range.start + 1);
+      res.writeHead(206);
+      if (req.method === 'HEAD') { res.end(); return; }
+      const part = fs.createReadStream(file, { start: range.start, end: range.end });
+      part.on('error', () => res.destroy());
+      part.pipe(res);
+      return;
+    }
+  }
   const gzip = COMPRESSIBLE.has(ext) && stat.size > 1024 && /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''));
   if (COMPRESSIBLE.has(ext)) res.setHeader('Vary', 'Accept-Encoding');
   if (gzip) res.setHeader('Content-Encoding', 'gzip');
@@ -81,6 +102,24 @@ function sendFile(req, res, file, stat, { status = 200, noCache = false } = {}) 
   stream.on('error', () => res.destroy());
   if (gzip) stream.pipe(zlib.createGzip()).pipe(res);
   else stream.pipe(res);
+}
+
+/** Parse a single "bytes=a-b" range. Returns null (no/ignored range), 'invalid', or {start, end}. */
+function parseRange(header, size) {
+  if (!header) return null;
+  const m = /^bytes=(\d*)-(\d*)$/.exec(String(header).trim());
+  if (!m || (m[1] === '' && m[2] === '')) return null; // multi-range or malformed: send the whole file
+  let start, end;
+  if (m[1] === '') { // suffix: last N bytes
+    const n = Number(m[2]);
+    if (n === 0) return 'invalid';
+    start = Math.max(0, size - n); end = size - 1;
+  } else {
+    start = Number(m[1]);
+    end = m[2] === '' ? size - 1 : Math.min(Number(m[2]), size - 1);
+  }
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start >= size || start > end) return 'invalid';
+  return { start, end };
 }
 
 function serveStatic(req, res, root, urlPath, { notFound, noCache = false, prefix = '' } = {}) {
@@ -94,4 +133,4 @@ function serveStatic(req, res, root, urlPath, { notFound, noCache = false, prefi
   notFound();
 }
 
-module.exports = { resolve, sendFile, serveStatic, TYPES };
+module.exports = { resolve, sendFile, serveStatic, parseRange, TYPES };

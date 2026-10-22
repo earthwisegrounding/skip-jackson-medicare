@@ -16,8 +16,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400..800;1,400..800&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400..800;1,8..60,400..800&amp;display=swap">
-<link rel="stylesheet" href="./assets/css/styles.css?v=4">
-<script src="./assets/js/site.js?v=2" defer></script>
+<link rel="stylesheet" href="./assets/css/styles.css?v=7">
+<script src="./assets/js/site.js?v=3" defer></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -93,19 +93,44 @@
         <p><strong>Annual Enrollment runs October 15 to December 7 each year.</strong> It's when you can join, switch, or drop a Medicare Advantage or Part D drug plan for the coming year.</p>
       </div>
     </div>
-    <div class="seal">
-      <svg class="seal-ring" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
-        <defs><path id="seal-path" d="M200 200 m-176 0 a176 176 0 1 1 352 0 a176 176 0 1 1 -352 0"/></defs>
-        <circle cx="200" cy="200" r="198" fill="none" stroke="#e0b13a" stroke-width="2.5"/>
-        <circle cx="200" cy="200" r="192" fill="none" stroke="#e0b13a" stroke-width=".8"/>
-        <circle cx="200" cy="200" r="160" fill="none" stroke="#e0b13a" stroke-width=".8" stroke-dasharray="2 4"/>
-        <text><textPath href="#seal-path" startOffset="25%" text-anchor="middle" textLength="560" lengthAdjust="spacing">SKIP JACKSON ✦ LICENSED INSURANCE AGENT</textPath></text>
-      </svg>
-      <picture>
-        <source srcset="./assets/img/skip-jackson.webp" type="image/webp">
-        <img src="./assets/img/skip-jackson.png" width="720" height="720" alt="Skip Jackson, smiling, in a suit and glasses" fetchpriority="high">
-      </picture>
-      <span class="seal-caption">Licensed in Georgia</span>
+    <div class="hero-side">
+      <section class="audio-note" aria-labelledby="audio-note-title" data-audio-note>
+        <div class="audio-note-row">
+          <button class="audio-play" type="button" aria-describedby="audio-note-title" data-audio-toggle hidden>
+            <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
+            <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+            <span class="visually-hidden" data-audio-label>Play</span>
+          </button>
+          <div class="audio-note-text">
+            <h2 class="audio-note-title" id="audio-note-title">Listen to this audio message</h2>
+            <p class="audio-note-sub">A one-minute introduction to working with Skip <span class="audio-time" data-audio-time>1:03</span></p>
+          </div>
+          <span class="audio-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        </div>
+        <input class="audio-seek" type="range" min="0" max="63" step="1" value="0" aria-label="Audio position" aria-valuetext="0:00 of 1:03" data-audio-seek hidden>
+        <audio class="audio-native" src="./assets/media/skip-intro.mp3" preload="none" controls data-audio>
+          <a href="./assets/media/skip-intro.mp3">Download the audio message (MP3, 1 minute)</a>
+        </audio>
+        <details class="audio-transcript">
+          <summary>Read the transcript</summary>
+          <p>Medicare can be confusing, but finding the right coverage for you doesn't have to be. Meet Skip Jackson, your friendly, independent Medicare insurance broker right here in Georgia. Whether you're turning 65, exploring Medicare for the first time, or wondering if your current plan is still the best fit, Skip is here to help. He'll listen, answer your questions, and help you compare Medicare plans from the insurance companies he represents.</p>
+          <p>And here's something you'll appreciate. There's never a charge for Skip's assistance, and absolutely no pressure. Just friendly, personal service from someone who cares about helping you make the right choice. So give Skip a call today, or schedule a conversation right here on his website. Having someone you can trust makes all the difference.</p>
+        </details>
+      </section>
+      <div class="seal">
+        <svg class="seal-ring" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
+          <defs><path id="seal-path" d="M200 200 m-176 0 a176 176 0 1 1 352 0 a176 176 0 1 1 -352 0"/></defs>
+          <circle cx="200" cy="200" r="198" fill="none" stroke="#e0b13a" stroke-width="2.5"/>
+          <circle cx="200" cy="200" r="192" fill="none" stroke="#e0b13a" stroke-width=".8"/>
+          <circle cx="200" cy="200" r="160" fill="none" stroke="#e0b13a" stroke-width=".8" stroke-dasharray="2 4"/>
+          <text><textPath href="#seal-path" startOffset="25%" text-anchor="middle" textLength="560" lengthAdjust="spacing">SKIP JACKSON ✦ LICENSED INSURANCE AGENT</textPath></text>
+        </svg>
+        <picture>
+          <source srcset="./assets/img/skip-jackson.webp" type="image/webp">
+          <img src="./assets/img/skip-jackson.png" width="720" height="720" alt="Skip Jackson, smiling, in a suit and glasses" fetchpriority="high">
+        </picture>
+        <span class="seal-caption">Licensed in Georgia</span>
+      </div>
     </div>
   </div>
 </section>

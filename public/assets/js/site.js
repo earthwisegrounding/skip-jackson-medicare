@@ -105,6 +105,52 @@
     }
   });
 
+  /* ---------- Audio message player (home page) ----------
+     Without JavaScript the browser's own audio controls show instead. */
+  document.querySelectorAll("[data-audio-note]").forEach(function (box) {
+    var audio = box.querySelector("[data-audio]");
+    var btn = box.querySelector("[data-audio-toggle]");
+    var seek = box.querySelector("[data-audio-seek]");
+    var timeEl = box.querySelector("[data-audio-time]");
+    var label = box.querySelector("[data-audio-label]");
+    if (!audio || !btn || !seek) return;
+    var total = Number(seek.max) || 63;
+    function fmt(sec) { sec = Math.max(0, Math.round(sec || 0)); return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
+    function paint() {
+      var t = audio.currentTime || 0;
+      seek.value = String(Math.floor(t));
+      seek.style.setProperty("--pct", (total ? (t / total) * 100 : 0).toFixed(1) + "%");
+      seek.setAttribute("aria-valuetext", fmt(t) + " of " + fmt(total));
+      if (timeEl) timeEl.textContent = (t > 0 ? fmt(t) + " / " : "") + fmt(total);
+    }
+    function setPlaying(on) {
+      box.classList.toggle("is-playing", on);
+      if (label) label.textContent = on ? "Pause" : "Play";
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    audio.removeAttribute("controls");
+    box.classList.add("is-enhanced");
+    btn.hidden = false; seek.hidden = false;
+    btn.setAttribute("aria-pressed", "false");
+    btn.addEventListener("click", function () {
+      if (audio.paused) { var p = audio.play(); if (p && p.catch) p.catch(function () { setPlaying(false); }); }
+      else audio.pause();
+    });
+    audio.addEventListener("play", function () { setPlaying(true); });
+    audio.addEventListener("pause", function () { setPlaying(false); });
+    audio.addEventListener("ended", function () { setPlaying(false); audio.currentTime = 0; paint(); });
+    audio.addEventListener("loadedmetadata", function () {
+      if (isFinite(audio.duration) && audio.duration > 0) { total = Math.round(audio.duration); seek.max = String(total); paint(); }
+    });
+    audio.addEventListener("timeupdate", paint);
+    seek.addEventListener("input", function () {
+      if (audio.readyState === 0) audio.load();
+      try { audio.currentTime = Number(seek.value); } catch (err) { /* not seekable yet */ }
+      paint();
+    });
+    paint();
+  });
+
   /* ---------- Error banner after a no-JavaScript form post fails (/contact/?error=1) ---------- */
   var banner = document.getElementById("form-error");
   if (banner && /[?&]error=1/.test(location.search)) banner.classList.add("show");
