@@ -64,7 +64,10 @@ install -d -m 700 -o "$APP_USER" -g "$APP_USER" "$DATA_DIR" "$BACKUP_DIR"
 if [ -d "$APP_DIR/.git" ]; then git -C "$APP_DIR" pull --ff-only; else git clone --depth 1 "$REPO" "$APP_DIR"; fi
 chown -R root:root "$APP_DIR"   # the app can read its code but never change it
 
+# Keep the RepDesk form address if one was set (it's private, so it never lives in the repository).
+REPDESK_FORM_URL="${REPDESK_FORM_URL:-$(sed -n 's/^REPDESK_FORM_URL=//p' /etc/skip-crm.env 2>/dev/null)}"
 cat > /etc/skip-crm.env <<ENV
+REPDESK_FORM_URL=$REPDESK_FORM_URL
 PORT=8790
 HOST=127.0.0.1
 DATA_DIR=$DATA_DIR
@@ -75,7 +78,7 @@ TRUST_PROXY_HOPS=1
 PUBLIC_URL=https://$SITE_HOST
 NODE_ENV=production
 ENV
-chmod 644 /etc/skip-crm.env
+chmod 600 /etc/skip-crm.env   # holds the private RepDesk form address; systemd reads it as root
 
 cat > /etc/systemd/system/skip-crm.service <<UNIT
 [Unit]

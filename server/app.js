@@ -8,6 +8,7 @@ const { openDb } = require('./db');
 const { securityHeaders, sendJson, sendText, redirect } = require('./http');
 const { serveStatic, resolve, sendFile } = require('./static');
 const { createLeadHandler } = require('./leads');
+const { createRepdeskForwarder } = require('./repdesk');
 const { createCrmApi } = require('./crm/api');
 const { createFormTokens } = require('./formtoken');
 const { createEventsPublic } = require('./events-public');
@@ -26,6 +27,7 @@ function loadConfig(overrides = {}) {
     crmDir: path.join(ROOT, 'crm'),
     trustProxy: env.TRUST_PROXY === '1',
     publicUrl: (env.PUBLIC_URL || '').replace(/\/+$/, '') || null,
+    repdeskFormUrl: env.REPDESK_FORM_URL || null,
     proxyHops: num(env.TRUST_PROXY_HOPS, 1),
     trustedClientIpHeader: env.TRUSTED_CLIENT_IP_HEADER || null,
     rateLimitMaxKeys: num(env.RATE_LIMIT_MAX_KEYS, 50000),
@@ -58,6 +60,7 @@ function createApp(overrides = {}) {
   const db = openDb(cfg.dataDir);
   const ctx = { db, cfg, log, timers: [], formTokens: createFormTokens(cfg.dataDir) };
   A.warmDummyHash();
+  ctx.repdesk = createRepdeskForwarder(ctx);
   const handleLead = createLeadHandler(ctx);
   const handleCrmApi = createCrmApi(ctx);
   const eventsPublic = createEventsPublic(ctx);

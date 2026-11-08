@@ -64,6 +64,7 @@ Demo data is obviously fake (555-01xx phone numbers, `example.com` emails, names
 | `SESSION_IDLE_MINUTES` / `SESSION_ABSOLUTE_HOURS` | 30 / 12 | |
 | `LEAD_LIMIT_10MIN` / `LEAD_LIMIT_DAILY` | 5 / 20 | Website form submissions per IP. |
 | `PUBLIC_URL` | — | **Set this in production**, e.g. `https://example.com` (the deploy script does). Used for absolute links in event JSON-LD and calendar files. When unset, those links are relative; the request's Host header is never used. |
+| `REPDESK_FORM_URL` | — | Skip's private RepDesk form address (`https://desk.digitaldoorwaymarketing.com/inbound/…`). When set, every website request and every RSVP that gave permission to be contacted is also sent to his RepDesk desk (the CRM add-on). Copies wait in `repdesk_outbox` and are retried until delivered; if the add-on is cancelled RepDesk refuses them and the requests stay here. Treat it like a password: keep it in `/etc/skip-crm.env`, never in the repository. |
 | `CRM_TIMEZONE` | `America/New_York` | Used for "today", business days and AEP dates. |
 | `BACKUP_DIR` | `./backups` | Where `npm run backup` writes. |
 

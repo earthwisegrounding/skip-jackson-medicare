@@ -8,6 +8,7 @@ const { tx, insert } = require('./db');
 const S = require('./services');
 const { nextBusinessDayAt } = require('./time');
 const { WEB_CONSENT_TEXT, WEB_CONSENT_VERSION, TOPICS, keys } = require('./constants');
+const RD = require('./repdesk');
 
 const BODY_LIMIT = 20 * 1024;
 const MIN_FILL_MS = 3000;
@@ -123,6 +124,7 @@ function createLeadHandler(ctx) {
       ip, userAgent, origin: String(req.headers.origin || '').slice(0, 200) || null, referer: String(req.headers.referer || '').slice(0, 200) || null,
       verified: token.valid, verifyReason: token.reason, browserHeaders,
     }));
+    if (ctx.repdesk) ctx.repdesk.flush();
     success();
   };
 }
@@ -228,6 +230,8 @@ function storeLead(db, v, { ip = null, userAgent = null, origin = null, referer 
   }
   S.audit(db, { action: 'lead_received', entity: 'contact', entityId: contact.id,
     summary: household ? `new contact; shares ${household.matchType} with contact ${household.contact.id}` : isNew ? 'new contact' : `matched existing contact by ${matchType}`, ip });
+  // A copy for the RepDesk CRM add-on, sent after this transaction commits (see repdesk.js).
+  RD.queue(db, contact.id, RD.outboxPayload(v, { source, verified, verifyReason, submittedAt: now }));
   return contact.id;
 }
 

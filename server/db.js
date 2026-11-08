@@ -392,6 +392,24 @@ CREATE INDEX idx_event_rsvps_confirm ON event_rsvps(confirm_hash);
 UPDATE events SET public_cancel = 1 WHERE status = 'cancelled' AND published_at IS NOT NULL;
 `,
   },
+  {
+    version: 6,
+    name: 'repdesk outbox: copies of website requests for the RepDesk CRM add-on',
+    sql: `
+CREATE TABLE repdesk_outbox (
+  id INTEGER PRIMARY KEY,
+  contact_id INTEGER REFERENCES contacts(id),
+  payload TEXT NOT NULL,                     -- the form fields sent; emptied once delivered
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'refused')),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  next_attempt_at TEXT,
+  sent_at TEXT,
+  last_error TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX idx_repdesk_outbox_pending ON repdesk_outbox(status, next_attempt_at);
+`,
+  },
 ];
 
 /** Lower-case, strip accents and punctuation, collapse spaces: "José O'Brien" -> "jose obrien". */

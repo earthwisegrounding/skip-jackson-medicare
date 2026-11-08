@@ -211,6 +211,7 @@ function createEventsPublic(ctx) {
     if (problem === 'ip_cap') { respondError(429, { form: `For groups larger than ${E.SEAT_CAP_PER_IP}, please call (404) 354-7597 and Skip will save your seats.` }, { countFail: false }); return; }
     if (problem === 'full') { limiter.hit(ip); respondError(409, { form: 'This event is full. Call (404) 354-7597 to join the waitlist.' }, { countFail: false }); return; }
     limiter.hit(ip);
+    if (ctx.repdesk) ctx.repdesk.flush(); // an RSVP that gave permission to be contacted was queued for RepDesk
     if (isJson) { sendJson(res, 201, { ok: true }); return; }
     // Post/Redirect/Get: refreshing the confirmation never re-posts. The token (not the join info) is in the URL.
     redirect(res, 303, `/events/${encodeURIComponent(e.slug)}/confirmed?t=${encodeURIComponent(stored.confirmToken)}`);
