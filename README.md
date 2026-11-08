@@ -71,6 +71,8 @@ Demo data is obviously fake (555-01xx phone numbers, `example.com` emails, names
 
 Any host that runs Node 25 and has a **persistent disk** works (a small VPS, Render/Railway/Fly.io with a volume, etc.). SQLite is a single file, so run **one** instance.
 
+**Live setup:** https://aggressiveseniorsolutions.com runs on the Google Cloud VM `skip-crm` (us-east1-b) at the reserved static IP `34.23.138.208` (address `skip-ip`). DNS is managed at SiteGround (DNS Zone Editor): A records for `aggressiveseniorsolutions.com` and `www` point at that IP; the mail records stay on SiteGround. `deploy/server-setup.sh` writes the Caddy config for this domain by default (`www` and the `<ip>.sslip.io` address redirect to it), so re-running it is safe. Code updates: `sudo skip-crm-update` on the server.
+
 1. **TLS is required.** Put the app behind HTTPS (Caddy, nginx, or your platform's load balancer). Never serve the CRM over plain HTTP.
 2. Set `COOKIE_SECURE=1` and, behind a proxy, `TRUST_PROXY=1`. HSTS is sent automatically on HTTPS requests.
 3. Set `DATA_DIR` to the persistent volume and create the first admin with `npm run create-user`.

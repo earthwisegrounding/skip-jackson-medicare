@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Runs ON the server as root. Safe to re-run.
-#   sudo SITE_HOST=crm.example.com bash server-setup.sh
-# Without SITE_HOST it uses <ip>.sslip.io so HTTPS works before a domain exists.
+#   sudo bash server-setup.sh                          # aggressiveseniorsolutions.com (+ www and <ip>.sslip.io redirect to it)
+#   sudo SITE_HOST=example.com bash server-setup.sh    # another domain
+#   sudo SITE_HOST= bash server-setup.sh               # no domain yet: <ip>.sslip.io so HTTPS still works
+# REDIRECT_HOSTS (space-separated) overrides which extra names redirect to SITE_HOST.
+# Every name must have a DNS A record pointing at this server, or Caddy can't get its certificate.
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -12,11 +15,16 @@ DATA_DIR=/var/lib/skip-crm
 BACKUP_DIR=/var/backups/skip-crm
 APP_USER=skipcrm
 
-if [ -z "${SITE_HOST:-}" ]; then
-  IP=$(curl -fsS -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
-  SITE_HOST="${IP//./-}.sslip.io"
+IP=$(curl -fsS -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
+SSLIP_HOST="${IP//./-}.sslip.io"
+SITE_HOST="${SITE_HOST-aggressiveseniorsolutions.com}"
+[ -n "$SITE_HOST" ] || SITE_HOST="$SSLIP_HOST"
+if [ "$SITE_HOST" = "$SSLIP_HOST" ]; then
+  REDIRECT_HOSTS="${REDIRECT_HOSTS-}"
+else
+  REDIRECT_HOSTS="${REDIRECT_HOSTS-www.$SITE_HOST $SSLIP_HOST}"
 fi
-echo "==> Site host: $SITE_HOST"
+echo "==> Site host: $SITE_HOST${REDIRECT_HOSTS:+  (redirects: $REDIRECT_HOSTS)}"
 
 echo "==> Swap (e2-micro has 1 GB RAM)"
 if ! swapon --show | grep -q /swapfile; then
@@ -132,6 +140,15 @@ $SITE_HOST {
 	reverse_proxy 127.0.0.1:8790
 }
 CADDY
+if [ -n "$REDIRECT_HOSTS" ]; then
+  cat >> /etc/caddy/Caddyfile <<CADDY
+
+$(echo $REDIRECT_HOSTS | sed 's/ /, /g') {
+	redir https://$SITE_HOST{uri} permanent
+}
+CADDY
+fi
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
 
 cat > /usr/local/bin/skip-crm-update <<'UPD'
 #!/usr/bin/env bash
