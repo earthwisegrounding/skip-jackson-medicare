@@ -148,7 +148,8 @@ test('events review: server behaviour', async (t) => {
     assert.equal(r.status, 303);
     const loc = r.headers.get('location');
     assert.match(loc, /\/confirmed\?t=/);
-    assert.doesNotMatch(loc, /rsvp_id|\d{1,6}$/);
+    // The confirmation link carries only the signed token, never the RSVP's id (the token itself may end in a digit).
+    assert.doesNotMatch(loc, /rsvp_id|[?&](id|rsvp)=|\/\d{1,6}(\/|$)/);
     const c1 = await request(s.base, 'GET', loc);
     assert.equal(c1.status, 200);
     assert.match(c1.body, /You’re signed up/);

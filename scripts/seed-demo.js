@@ -134,10 +134,10 @@ async function main() {
       effective_date: eff, status, election_period: 'AEP', application_submitted_at: ymd(now - 10 * DAY), application_number: `DEMO-${contact}${status.length}`,
       premium: type === 'Medigap' ? 142.5 : 0, created_by: adminId, created_at: iso(now - 30 * DAY), updated_at: iso(now - 30 * DAY), ...extra,
     });
-    pol(ids.Danny, 'Humana', 'MAPD', 'pending', ymd(now + 20 * DAY));
+    pol(ids.Danny, 'Kaiser Permanente', 'MAPD', 'pending', ymd(now + 20 * DAY));
     pol(ids.Fiona, 'Aetna', 'MAPD', 'active', '2025-01-01');
     pol(ids.Fiona, 'Wellcare', 'Dental/Vision', 'active', '2025-01-01');
-    pol(ids.Fred, 'UnitedHealthcare', 'Medigap', 'active', '2024-06-01');
+    pol(ids.Fred, 'Anthem Blue Cross Blue Shield', 'Medigap', 'active', '2024-06-01');
     pol(ids.Fred, 'Wellcare', 'PDP', 'active', '2025-01-01');
     pol(ids.Greta, 'Devoted Health', 'D-SNP', 'active', '2025-03-01');
     pol(ids.Greta, 'HealthSpring', 'MAPD', 'terminated', '2023-01-01', { end_date: '2025-02-28' });

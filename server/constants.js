@@ -46,7 +46,7 @@ const SOA_PRODUCTS = [
 const SOA_SIGNATURE_METHODS = [['paper', 'Paper'], ['electronic', 'Electronic'], ['verbal_recorded', 'Verbal (recorded call)']];
 const SOA_INITIATED_BY = [['beneficiary', 'Beneficiary'], ['agent', 'Agent']];
 
-const CARRIERS = ['Humana', 'HealthSpring', 'Aetna', 'UnitedHealthcare', 'Wellcare', 'Devoted Health', 'Other'];
+const CARRIERS = ['Aetna', 'Anthem Blue Cross Blue Shield', 'Devoted Health', 'HealthSpring', 'Kaiser Permanente', 'Wellcare', 'Other'];
 const PLAN_TYPES = ['MAPD', 'MA-only', 'PDP', 'Medigap', 'D-SNP', 'C-SNP', 'I-SNP', 'Dental/Vision', 'Hospital indemnity', 'Other'];
 const POLICY_STATUS = [['pending', 'Pending'], ['active', 'Active'], ['cancelled', 'Cancelled'], ['terminated', 'Terminated'], ['declined', 'Declined']];
 const ELECTION_PERIODS = ['IEP', 'ICEP', 'AEP', 'MA-OEP', 'SEP', 'GI', 'Other'];

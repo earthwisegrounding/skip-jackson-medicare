@@ -158,7 +158,7 @@
   /* ---------- Lead forms -> /api/leads (the CRM) ----------
      Without JavaScript, the form posts normally and the server redirects to /thank-you/.
      With JavaScript, we validate in place, post JSON, and show the result here. */
-  var PHONE_FALLBACK = "Please call (404) 354-7597 or email Sjackson@empowerbrokerage.com, and Skip will be glad to help.";
+  var PHONE_FALLBACK = "Please call (404) 354-7597 or email skip@aggressiveseniorsolutions.com, and Skip will be glad to help.";
   document.querySelectorAll("form[data-lead-form]").forEach(function (form) {
     var started = form.querySelector("input[name='form_started_at']");
     if (started) started.value = String(Date.now());
