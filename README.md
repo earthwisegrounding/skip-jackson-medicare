@@ -8,8 +8,8 @@ One small Node.js process serves:
 | `POST /api/leads` | Lead intake from the website forms (JSON or plain form posts) |
 | `GET /api/form-token` | Signed form token for the website forms (`{token, issued_at}`); sent back as the `form_token` field |
 | `/events/`, `/events/<slug>/` | Server-rendered events listing and event pages (RSVP form posts to `/events/<slug>/rsvp`; `.ics` at `/events/<slug>/calendar.ics`) |
-| `/login`, `/staff` | Shortcuts that redirect to `/crm/` |
-| `/crm/` | The admin CRM (single-page app in `crm/`) |
+| `/login`, `/staff` | Shortcuts that redirect to `/crm/` (to RepDesk's sign-in when `CRM_DISABLED=1`) |
+| `/crm/` | The admin CRM (single-page app in `crm/`); retired on the live site, see `CRM_DISABLED` |
 | `/crm/api/*` | The CRM's JSON API |
 
 There are **no third-party dependencies**: only Node's built-in `http`, `sqlite`, `crypto`, `fs` and `test` modules. Requires **Node 25+**.
@@ -65,6 +65,8 @@ Demo data is obviously fake (555-01xx phone numbers, `example.com` emails, names
 | `LEAD_LIMIT_10MIN` / `LEAD_LIMIT_DAILY` | 5 / 20 | Website form submissions per IP. |
 | `PUBLIC_URL` | — | **Set this in production**, e.g. `https://example.com` (the deploy script does). Used for absolute links in event JSON-LD and calendar files. When unset, those links are relative; the request's Host header is never used. |
 | `REPDESK_FORM_URL` | — | Skip's private RepDesk form address (`https://desk.digitaldoorwaymarketing.com/inbound/…`). When set, every website request and every RSVP that gave permission to be contacted is also sent to his RepDesk desk (the CRM add-on). Copies wait in `repdesk_outbox` and are retried until delivered; if the add-on is cancelled RepDesk refuses them and the requests stay here. Treat it like a password: keep it in `/etc/skip-crm.env`, never in the repository. |
+| `CRM_DISABLED` | — | `1` retires the built-in CRM: `/crm/` and `/login` redirect to RepDesk's sign-in, `/crm/api/*` answers 410, and nobody can sign in here. Forms, RSVPs, events pages and forwarding to RepDesk keep working. **On by default on the live server** (the CRM add-on is RepDesk, which Digital Doorway Marketing controls). Events can't be created or edited while it's on. |
+| `STAFF_SIGNIN_URL` | `https://desk.digitaldoorwaymarketing.com/login` | Where the retired CRM's addresses send people. |
 | `CRM_TIMEZONE` | `America/New_York` | Used for "today", business days and AEP dates. |
 | `BACKUP_DIR` | `./backups` | Where `npm run backup` writes. |
 

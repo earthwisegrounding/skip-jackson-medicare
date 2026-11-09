@@ -28,6 +28,10 @@ function loadConfig(overrides = {}) {
     trustProxy: env.TRUST_PROXY === '1',
     publicUrl: (env.PUBLIC_URL || '').replace(/\/+$/, '') || null,
     repdeskFormUrl: env.REPDESK_FORM_URL || null,
+    // CRM_DISABLED=1 retires the built-in CRM (the CRM add-on now lives in RepDesk): its pages and API
+    // stop answering and the sign-in shortcuts go to RepDesk. Website requests are still recorded here.
+    crmDisabled: env.CRM_DISABLED === '1',
+    staffSignInUrl: env.STAFF_SIGNIN_URL || 'https://desk.digitaldoorwaymarketing.com/login',
     proxyHops: num(env.TRUST_PROXY_HOPS, 1),
     trustedClientIpHeader: env.TRUSTED_CLIENT_IP_HEADER || null,
     rateLimitMaxKeys: num(env.RATE_LIMIT_MAX_KEYS, 50000),
@@ -108,6 +112,12 @@ function createApp(overrides = {}) {
         return;
       }
       if (pathname.startsWith('/api/')) { sendJson(res, 404, { ok: false, error: 'not_found' }); return; }
+      if (cfg.crmDisabled && (isCrm || pathname === '/login' || pathname === '/staff')) {
+        if (pathname === '/crm/api' || pathname.startsWith('/crm/api/')) { sendJson(res, 410, { ok: false, error: 'crm_moved' }, { 'Cache-Control': 'no-store' }); return; }
+        if (req.method !== 'GET' && req.method !== 'HEAD') { sendText(res, 405, 'Method not allowed', 'text/plain; charset=utf-8', { Allow: 'GET, HEAD' }); return; }
+        redirect(res, 302, cfg.staffSignInUrl);
+        return;
+      }
       if (pathname === '/crm/api' || pathname.startsWith('/crm/api/')) { await handleCrmApi(req, res, pathname, url.searchParams); return; }
       if (!isCrm && await eventsPublic.handle(req, res, pathname, url, () => notFound(req, res))) return;
 

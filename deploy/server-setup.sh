@@ -66,8 +66,11 @@ chown -R root:root "$APP_DIR"   # the app can read its code but never change it
 
 # Keep the RepDesk form address if one was set (it's private, so it never lives in the repository).
 REPDESK_FORM_URL="${REPDESK_FORM_URL:-$(sed -n 's/^REPDESK_FORM_URL=//p' /etc/skip-crm.env 2>/dev/null)}"
+# The built-in CRM is retired (the CRM add-on is RepDesk). CRM_DISABLED=0 turns it back on.
+CRM_DISABLED="${CRM_DISABLED:-$(sed -n 's/^CRM_DISABLED=//p' /etc/skip-crm.env 2>/dev/null)}"
 cat > /etc/skip-crm.env <<ENV
 REPDESK_FORM_URL=$REPDESK_FORM_URL
+CRM_DISABLED=${CRM_DISABLED:-1}
 PORT=8790
 HOST=127.0.0.1
 DATA_DIR=$DATA_DIR
@@ -169,4 +172,4 @@ systemctl reload caddy || systemctl restart caddy
 
 sleep 2
 curl -fsS -o /dev/null -w "app: %{http_code}\n" http://127.0.0.1:8790/healthz
-echo "==> Ready at https://$SITE_HOST/  (CRM: https://$SITE_HOST/crm/)"
+echo "==> Ready at https://$SITE_HOST/  (staff sign in to RepDesk: https://desk.digitaldoorwaymarketing.com/login)"
